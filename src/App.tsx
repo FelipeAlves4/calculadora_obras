@@ -149,7 +149,7 @@ function App() {
             </>}
             <div className="wizard-navigation">
               {formMode==='guiado'&&step>1&&<button className="btn btn-ghost" type="button" onClick={()=>setStep(n=>Math.max(1,n-1))}>Voltar</button>}
-              {formMode==='guiado'&&step<3?<button className="btn btn-gold" type="button" onClick={()=>setStep(n=>Math.min(3,n+1))}>Próxima etapa <ArrowRight size={16}/></button>:<button className="btn btn-gold" type="button" onClick={()=>{setView('results');document.querySelector('.results-column')?.scrollIntoView({behavior:'smooth',block:'start'});}}><Calculator size={17}/> Ver minha estimativa <ArrowRight size={16}/></button>}
+              {formMode==='guiado'&&step<3?<button className="btn btn-gold" type="button" onClick={()=>setStep(n=>Math.min(3,n+1))}>Próxima etapa <ArrowRight size={16}/></button>:<button className="btn btn-gold" type="button" onClick={()=>{setView('results');window.requestAnimationFrame(()=>document.querySelector('.results-column')?.scrollIntoView({behavior:'smooth',block:'start'}));}}><Calculator size={17}/> Ver minha estimativa <ArrowRight size={16}/></button>}
             </div>
           </div>
         </section>
