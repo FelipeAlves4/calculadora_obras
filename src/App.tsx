@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   ArrowRight, BarChart3, Building2, Calculator, CheckCircle2, ClipboardList,
   Download, FileText, HardHat, Home, Info, MapPin, Maximize2, PhoneCall,
@@ -13,7 +14,7 @@ import {
 const phone = String(import.meta.env.VITE_WHATSAPP_NUMBER || '').replace(/\D/g, '');
 const whatsappReady = /^\d{10,15}$/.test(phone);
 
-function Field({ title, note, children }: { title: string; note?: string; children: React.ReactNode }) {
+function Field({ title, note, children }: { title: string; note?: string; children: ReactNode }) {
   return <label className="field"><span>{title}</span>{children}{note ? <small>{note}</small> : null}</label>;
 }
 function SectionTitle({ number, title, description }: { number: string; title: string; description: string }) {
@@ -32,6 +33,7 @@ function App() {
     ...previous, addOns: { ...previous.addOns, [id]: { ...previous.addOns[id], [property]: value } }
   }));
   const filteredAddOns = ADD_ON_CONFIG.filter(item => item.types.includes(form.type));
+  const graph = result.stages.map((item, index) => ({ name: item.title, value: item.cost, color: ['#d3a653','#b38b43','#e2be70','#886a3a','#eccd89','#ccaa62','#ab853d','#d1bb85','#907c59'][index % 9] }));
   const printReport = () => window.print();
   const reset = () => {
     if (window.confirm('Deseja limpar os dados e restaurar o exemplo inicial?')) {
@@ -142,6 +144,16 @@ function App() {
           <div className="panel result-panel">
             <div className="panel-heading"><div><span className="eyebrow">COMPOSIÇÃO DA ESTIMATIVA</span><h2>Custos por etapa</h2></div><BarChart3 size={21}/></div>
             <p className="small-description">Distribuição percentual ilustrativa da construção base; os adicionais e a reserva são apresentados separadamente.</p>
+            <div className="chart-summary">
+              <div className="donut-chart" role="img" aria-label="Gráfico circular de distribuição ilustrativa do custo base por etapa">
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart><Pie data={graph} dataKey="value" nameKey="name" innerRadius={58} outerRadius={88} paddingAngle={2} stroke="none">
+                    {graph.map((part, index) => <Cell key={part.name} fill={part.color} fillOpacity={index % 2 === 0 ? 1 : .88}/>)}
+                  </Pie><Tooltip formatter={(value: number | string) => formatMoney(Number(value))} contentStyle={{background:'#081929',border:'1px solid #5b523c',borderRadius:8,color:'#fff'}} itemStyle={{color:'#efcc83'}} /></PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="chart-legend">{graph.slice(0,5).map(part => <div key={part.name}><span style={{background:part.color}}/><small>{part.name}</small></div>)}</div>
+            </div>
             <div className="stage-list">{result.stages.map(stage => <div className="stage-row" key={stage.id}>
               <div className="stage-label"><span>{stage.title}</span><strong>{formatMoney(stage.cost)}</strong></div>
               <div className="stage-track"><div style={{width: stage.percentage + '%'}}/></div>
