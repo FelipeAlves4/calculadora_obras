@@ -1,4 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { MaterialTools } from './MaterialTools';
+import { BudgetPlanner } from './BudgetPlanner';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   ArrowRight, BarChart3, Building2, Calculator, CheckCircle2, ClipboardList,
@@ -24,6 +26,8 @@ function App() {
   const [form, setForm] = useState<EstimateInput>(initialInput);
   const [view, setView] = useState<'inputs' | 'results'>('inputs');
   const [details, setDetails] = useState(true);
+  const [formMode,setFormMode] = useState<'guiado'|'detalhado'>('guiado');
+  const [step,setStep] = useState(1);
   const result = useMemo(() => calculate(form), [form]);
   const comparisons = useMemo(() => compareStandards(form), [form]);
   const set = <K extends keyof EstimateInput>(key: K, value: EstimateInput[K]) => setForm(previous => ({ ...previous, [key]: value }));
@@ -37,7 +41,7 @@ function App() {
   const printReport = () => window.print();
   const reset = () => {
     if (window.confirm('Deseja limpar os dados e restaurar o exemplo inicial?')) {
-      setForm(initialInput()); setView('inputs');
+      setForm(initialInput()); setView('inputs'); setStep(1);
     }
   };
   const toggleFullscreen = async () => {
@@ -82,6 +86,8 @@ function App() {
 
       <div className="notice notice-top" role="note"><ShieldAlert size={19}/><div><strong>Modo demonstrativo — valores não oficiais.</strong> As tabelas de preços, percentuais por etapa e acréscimos são exemplos editáveis, sem validação CUB/SINAPI. Os resultados não são um orçamento técnico ou proposta da construtora.</div></div>
 
+      <aside className="official-reference"><div className="official-left"><span className="reference-icon"><Info size={18}/></span><div><strong>Referência oficial para consulta</strong><p>CUB de São Paulo (setembro/2026): <b>R$ 2.238,58/m²</b> — tipologia R8-N, sem desoneração. Esse indicador corresponde a uma tipologia de edifício residencial e <b>não é aplicado automaticamente</b> a casas ou galpões.</p></div></div><a href="https://sindusconsp.com.br/cub-paulista-sobe-013-em-setembro/" target="_blank" rel="noopener noreferrer">Consultar SindusCon-SP <ArrowRight size={14}/></a></aside>
+
       <div className="mobile-view-switch" role="tablist" aria-label="Navegação do simulador">
         <button className={view === 'inputs' ? 'selected' : ''} onClick={() => setView('inputs')} role="tab" aria-selected={view === 'inputs'}><SlidersHorizontal size={16}/> Configurar obra</button>
         <button className={view === 'results' ? 'selected' : ''} onClick={() => setView('results')} role="tab" aria-selected={view === 'results'}><BarChart3 size={16}/> Resultados</button>
@@ -90,6 +96,15 @@ function App() {
       <div className="main-grid">
         <section className={view === 'inputs' ? 'form-column mobile-active' : 'form-column'} aria-label="Dados da obra">
           <div className="panel">
+            <div className="wizard-heading">
+              <div><span className="eyebrow">DADOS DA SIMULAÇÃO</span><h2>Configure sua construção</h2></div>
+              <div className="mode-switch" role="group" aria-label="Modo de preenchimento">
+                <button type="button" className={formMode==='guiado'?'active':''} onClick={()=>{setFormMode('guiado');setStep(1);}}>Passo a passo</button>
+                <button type="button" className={formMode==='detalhado'?'active':''} onClick={()=>setFormMode('detalhado')}>Tudo de uma vez</button>
+              </div>
+            </div>
+            {formMode==='guiado' && <div className="wizard-progress" aria-label={'Etapa '+step+' de 3'}>{[1,2,3].map(n=><button key={n} type="button" className={n===step?'active':n<step?'completed':''} onClick={()=>setStep(n)} aria-current={n===step?'step':undefined}><span>{n<step?'✓':n}</span><small>{n===1?'A obra':n===2?'Padrão':'Extras'}</small></button>)}</div>}
+            {(formMode==='detalhado'||step===1) && <>
             <SectionTitle number="01" title="Tipo de construção" description="Escolha o cenário que vamos simular."/>
             <div className="type-grid">
               <button className={'type-card ' + (form.type === 'casa' ? 'is-active' : '')} onClick={() => updateType('casa')} aria-pressed={form.type === 'casa'}><Home size={27}/><strong>Casa residencial</strong><span>Moradia e construção residencial</span></button>
@@ -103,7 +118,8 @@ function App() {
               <Field title="Cidade"><div className="input-wrap"><input type="text" value={form.city} maxLength={80} onChange={e => set('city', e.target.value)} placeholder="Ex.: Marília" aria-label="Cidade"/></div></Field>
               {form.type === 'casa' ? <Field title="Quantidade de pavimentos" note="Acréscimo demonstrativo de 2,5% por pavimento extra"><div className="input-wrap"><select value={form.floors} onChange={e => set('floors', Number(e.target.value))} aria-label="Pavimentos">{[1,2,3,4,5,6].map(n => <option key={n} value={n}>{n} {n === 1 ? 'pavimento' : 'pavimentos'}</option>)}</select></div></Field> : <div className="context-note"><Building2 size={17}/><span>Para galpões, o dimensionamento estrutural específico deverá ser orçado separadamente por profissional habilitado.</span></div>}
             </div>
-            <div className="separator"/>
+            </>}
+            {(formMode==='detalhado'||step===2) && <>
             <SectionTitle number="03" title="Padrão da construção" description="Compare materiais, acabamentos e investimento."/>
             <div className="standards-grid">{STANDARDS.map(standard => <button key={standard.id} className={'standard-card ' + (form.standard === standard.id ? 'is-active' : '')} onClick={() => updateStandard(standard.id)} aria-pressed={form.standard === standard.id}><span className="standard-check">{form.standard === standard.id ? '●' : '○'}</span><strong>{standard.title}</strong><small>{standard.description}</small></button>)}</div>
             <div className="fields-grid mt-space">
@@ -116,14 +132,25 @@ function App() {
               <Field title="Condições do terreno" note="Fatores exemplificativos, não substituem sondagem"><div className="input-wrap"><select value={form.terrain} onChange={e => set('terrain', e.target.value as EstimateInput['terrain'])}><option value="regular">Plano / regular (0%)</option><option value="aclive">Ajustes moderados (+8%)</option><option value="complexo">Ajustes complexos (+18%)</option></select></div></Field>
               <Field title="Reserva para imprevistos (%)" note="Aplicada ao subtotal, inclusive adicionais"><div className="input-wrap"><input type="number" min="0" max="40" value={form.reservePercent} onChange={e => set('reservePercent', Math.max(0, Math.min(40, Number(e.target.value) || 0)))}/><b>%</b></div></Field>
             </div>
-            <div className="separator"/>
+            </>}
+            {(formMode==='detalhado'||step===3) && <>
             <SectionTitle number="05" title="Adicionais da construção" description="Inclua apenas itens que não estão no preço base por m²."/>
             <div className="addon-list">{filteredAddOns.map(extra => <div className={'addon ' + (form.addOns[extra.id].enabled ? 'addon-enabled' : '')} key={extra.id}>
               <label className="addon-main"><input type="checkbox" checked={form.addOns[extra.id].enabled} onChange={e => updateAddOn(extra.id, 'enabled', e.target.checked)}/><div><strong>{extra.title}</strong><small>{extra.description}</small></div></label>
               {form.addOns[extra.id].enabled && <div className="addon-cost"><span>Custo adicional estimado</span><div className="input-wrap"><span>R$</span><input type="number" min="0" step="100" value={form.addOns[extra.id].value} onChange={e => updateAddOn(extra.id, 'value', Math.max(0, Number(e.target.value) || 0))}/></div></div>}
             </div>)}</div>
+            <div className="separator"/>
+            <SectionTitle number="06" title="Seu planejamento financeiro" description="O terreno fica separado do custo de construir. Informe seu limite para avaliar a viabilidade."/>
+            <div className="fields-grid">
+              <Field title="Valor do terreno (opcional)" note="Se já possui terreno, deixe 0. Não altera o custo da obra."><div className="input-wrap"><span>R$</span><input type="number" min="0" step="1000" value={form.landCost} onChange={e=>set('landCost',Math.max(0,Number(e.target.value)||0))}/></div></Field>
+              <Field title="Orçamento disponível (opcional)" note="Comparado com o custo de obra mais terreno, se informado."><div className="input-wrap"><span>R$</span><input type="number" min="0" step="1000" value={form.budgetAvailable} onChange={e=>set('budgetAvailable',Math.max(0,Number(e.target.value)||0))}/></div></Field>
+            </div>
+            </>}
+            <div className="wizard-navigation">
+              {formMode==='guiado'&&step>1&&<button className="btn btn-ghost" type="button" onClick={()=>setStep(n=>Math.max(1,n-1))}>Voltar</button>}
+              {formMode==='guiado'&&step<3?<button className="btn btn-gold" type="button" onClick={()=>setStep(n=>Math.min(3,n+1))}>Próxima etapa <ArrowRight size={16}/></button>:<button className="btn btn-gold" type="button" onClick={()=>{setView('results');document.querySelector('.results-column')?.scrollIntoView({behavior:'smooth',block:'start'});}}><Calculator size={17}/> Ver minha estimativa <ArrowRight size={16}/></button>}
+            </div>
           </div>
-          <button className="btn btn-gold next-results" onClick={() => {setView('results'); window.scrollTo({top: 0, behavior:'smooth'});}}><Calculator size={18}/> Visualizar resultado <ArrowRight size={18}/></button>
         </section>
 
         <section className={view === 'results' ? 'results-column mobile-active' : 'results-column'} aria-label="Estimativa da obra">
