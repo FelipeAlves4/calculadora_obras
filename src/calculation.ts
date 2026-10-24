@@ -16,6 +16,9 @@ export interface EstimateInput {
   reservePercent: number;
   landCost: number;
   budgetAvailable: number;
+  priceSourceName: string;
+  priceSourceCompetence: string;
+  priceSourceUrl: string;
   addOns: Record<AddOnId, AddOnValue>;
 }
 export interface Stage { id: string; title: string; percentage: number; cost: number }
@@ -92,12 +95,13 @@ export function initialInput(): EstimateInput {
   return {
     type: 'casa', standard: 'medio', area: 120, floors: 1, terrain: 'regular', uf: 'SP', city: '',
     baseRate: DEFAULT_RATES.casa.medio, reservePercent: 10, landCost: 0, budgetAvailable: 0,
+    priceSourceName: '', priceSourceCompetence: '', priceSourceUrl: '',
     addOns: Object.fromEntries(ADD_ON_CONFIG.map((item) => [item.id, { enabled: false, value: item.example }])) as EstimateInput['addOns'],
   };
 }
 
 export function switchPreset(input: EstimateInput, type: WorkType, standard: Standard): EstimateInput {
-  return { ...input, type, standard, baseRate: DEFAULT_RATES[type][standard], floors: type === 'galpao' ? 1 : input.floors };
+  return { ...input, type, standard, priceSourceName: '', priceSourceCompetence: '', priceSourceUrl: '', baseRate: DEFAULT_RATES[type][standard], floors: type === 'galpao' ? 1 : input.floors };
 }
 
 export function calculate(input: EstimateInput): EstimateResult {
