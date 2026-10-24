@@ -14,6 +14,8 @@ export interface EstimateInput {
   city: string;
   baseRate: number;
   reservePercent: number;
+  landCost: number;
+  budgetAvailable: number;
   addOns: Record<AddOnId, AddOnValue>;
 }
 export interface Stage { id: string; title: string; percentage: number; cost: number }
@@ -23,6 +25,7 @@ export interface EstimateResult {
   subtotal: number;
   reserve: number;
   total: number;
+  investmentTotal: number;
   perSquareMeter: number;
   terrainFactor: number;
   floorFactor: number;
@@ -88,7 +91,7 @@ export const formatNumber = (value: number) => new Intl.NumberFormat('pt-BR', {
 export function initialInput(): EstimateInput {
   return {
     type: 'casa', standard: 'medio', area: 120, floors: 1, terrain: 'regular', uf: 'SP', city: '',
-    baseRate: DEFAULT_RATES.casa.medio, reservePercent: 10,
+    baseRate: DEFAULT_RATES.casa.medio, reservePercent: 10, landCost: 0, budgetAvailable: 0,
     addOns: Object.fromEntries(ADD_ON_CONFIG.map((item) => [item.id, { enabled: false, value: item.example }])) as EstimateInput['addOns'],
   };
 }
@@ -113,12 +116,15 @@ export function calculate(input: EstimateInput): EstimateResult {
   const subtotal = construction + addOnsTotal;
   const reserve = subtotal * Math.min(40, safeNumber(input.reservePercent)) / 100;
   const total = subtotal + reserve;
-  return { construction, addOnsTotal, subtotal, reserve, total, perSquareMeter: area > 0 ? total / area : 0, terrainFactor, floorFactor, stages, selectedAddOns };
+  const investmentTotal = total + safeNumber(input.landCost);
+  return { construction, addOnsTotal, subtotal, reserve, total, investmentTotal, perSquareMeter: area > 0 ? total / area : 0, terrainFactor, floorFactor, stages, selectedAddOns };
 }
 
 export function compareStandards(input: EstimateInput) {
   return STANDARDS.map((standard) => {
-    const next = standard.id === input.standard ? input : switchPreset(input, input.type, standard.id);
+    // Os cenários alternativos mantêm a relação com a base personalizada informada pelo visitante.
+    const ratio = DEFAULT_RATES[input.type][standard.id] / DEFAULT_RATES[input.type][input.standard];
+    const next = standard.id === input.standard ? input : { ...input, standard: standard.id, baseRate: safeNumber(input.baseRate) * ratio };
     return { ...standard, result: calculate(next), selected: standard.id === input.standard };
   });
 }
