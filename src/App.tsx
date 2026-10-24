@@ -222,7 +222,7 @@ function App() {
           {analysisTab==='etapas' && <div className="panel result-panel">
             <div className="panel-heading"><div><span className="eyebrow">COMPOSIÇÃO DA ESTIMATIVA</span><h2>Custos por etapa</h2></div><BarChart3 size={21}/></div>
             <p className="small-description">Distribuição percentual ilustrativa da construção base; os adicionais e a reserva são apresentados separadamente.</p>
-            <div className="chart-summary">
+            <div className="stage-detail-grid"><div className="chart-summary">
               <div className="donut-chart" role="img" aria-label="Gráfico circular de distribuição ilustrativa do custo base por etapa">
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart><Pie data={graph} dataKey="value" nameKey="name" innerRadius={58} outerRadius={88} paddingAngle={2} stroke="none">
@@ -236,7 +236,7 @@ function App() {
               <div className="stage-label"><span>{stage.title}</span><strong>{formatMoney(stage.cost)}</strong></div>
               <div className="stage-track"><div style={{width: stage.percentage + '%'}}/></div>
               <span className="stage-percent">{stage.percentage}% da base</span>
-            </div>)}</div>
+            </div>)}</div></div>
             <div className="cost-footer"><div><span>Subtotal da obra e adicionais</span><strong>{formatMoney(result.subtotal)}</strong></div><div><span>Reserva ({form.reservePercent}%)</span><strong>{formatMoney(result.reserve)}</strong></div><div className="cost-total"><span>Total estimado</span><strong>{formatMoney(result.total)}</strong></div></div>
           </div>}
           {analysisTab==='padroes' && <div className="panel result-panel">
