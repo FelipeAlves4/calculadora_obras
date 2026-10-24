@@ -1,53 +1,100 @@
 # Calculadora de Obras
 
-Simulador de custo de construção residencial e galpões, inspirado na experiência visual da Calculadora ASEX Educação. Projeto independente, sem copiar usuários, banco de dados, autenticação nem dados da ASEX.
+Simulador aberto de custos de construção residencial e galpões, com identidade visual navy/dourada inspirada na Calculadora ASEX Educação. Projeto autônomo: **nenhum banco, login, dados ou segredos da ASEX foram reutilizados**.
 
-## Começar
+Site: https://calculadora-obras.vercel.app/
+
+## Rodar localmente
 
 ```bash
 npm install
 npm run dev
 ```
 
-Para testar: `npm test`. Para gerar produção: `npm run build`.
+- `npm test`: testes unitários de cálculo e planejamento
+- `npm run build`: verificação TypeScript e build Vite
+- `npm run preview`: visualizar o build de produção
 
-## Importante sobre os preços
+Stack: React 18, TypeScript, Vite, Recharts, Lucide.
 
-**Todos os preços, coeficientes, pesos de etapas e custos de adicionais pré-carregados são demonstrativos, não foram validados como preços de mercado.** São hipóteses de simulação, não uma cotação do CUB ou SINAPI. Substitua pela referência adequada antes de apresentar uma estimativa comercial. Preço por m² pode ser ajustado manualmente no formulário.
+## O que está implementado
 
-O local informado aparece no relatório, mas **não atualiza os preços automaticamente**. A aplicação não usa atualmente integração CUB/SINAPI, tampouco calcula quantidades físicas de insumos, estrutura ou fundações. Prazo, materiais e mão de obra detalhados dependem de projeto e orçamento técnico.
+### Simulação de obra
+- Modo **passo a passo** (3 etapas) ou **tudo de uma vez**
+- Cálculos separados para **casa residencial** e **galpão/barracão**
+- Área, cidade/UF (informativas), padrão de construção, pavimentos residenciais, terreno e reserva de imprevistos
+- Preço base por m² ajustável e adicionais opcionais em reais
+- Custo de construção, adicionais, reserva, total da obra e custo por m²
+- Valor do terreno opcional apresentado *separadamente* e cálculo de investimento incluindo terreno
+- Comparação com o orçamento disponível e cenários de sensibilidade **hipotéticos** de ±15%
+- Comparação de padrões compatível com preço unitário personalizado
+- Gráfico de composição por etapas e impressão/salvamento do relatório em PDF
 
-É uma **estimativa preliminar ilustrativa, não orçamento técnico, proposta vinculante ou laudo de engenharia**.
+### Planejamento financeiro
+- Número de meses escolhido pelo usuário
+- Distribuição de desembolso por fases definidas **para demonstração**
+- Gráfico mensal e provisão média mensal
+- Não representa cronograma técnico de execução nem previsão de prazo.
 
-## Funcionalidades da versão inicial
+### Calculadoras geométricas independentes
+- **Piso**: área com margem de perda e caixas conforme cobertura informada
+- **Blocos/tijolos**: área líquida, dimensões com juntas, perdas e arredondamento
+- **Concreto**: volume geométrico de elemento retangular e margem de perdas
+- **Pintura**: litros por área, demãos, rendimento declarado do produto e perdas
 
-- Casa residencial e galpão/barracão com composições de etapas separadas
-- Padrão econômico, intermediário e alto
-- Área, pavimentos, topografia e valor de referência por m² editável
-- Adicionais opcionais e reserva percentual
-- Composição dos custos por etapa, resumo e comparação de padrões
-- Relatório em impressão/PDF pelo navegador
-- Link para WhatsApp somente quando houver telefone configurado
-- Layout responsivo em React + TypeScript + Vite + Recharts
+Esses quantitativos **não são somados automaticamente ao orçamento**, para não duplicar valores já incorporados ao custo por m². Eles não substituem medições em projeto.
 
-## Configurar WhatsApp
+## Transparência das premissas
 
-Copie `.env.example` para `.env.local` e configure `VITE_WHATSAPP_NUMBER` apenas com dígitos, incluindo DDI e DDD. Exemplo de formato: `55DDDNUMERO` (substitua pelos números reais). Não coloque dados sensíveis em variáveis `VITE_`, que são públicas no frontend.
+**ATENÇÃO: NÃO USAR COMO ORÇAMENTO REAL SEM VALIDAÇÃO TÉCNICA.**
 
-## Referências para a futura base técnica
+Os valores de preços base, pesos de etapas, adicionais predefinidos e fatores de terreno/pavimentos **são fictícios**, usados apenas para demonstrar o funcionamento. Não representam preços oficiais do CUB, SINAPI nem levantamentos de fornecedores.
 
-- CUB/SindusCon: https://www.cub.org.br/
-- SINAPI (IBGE): https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9270-sistema-nacional-de-pesquisa-de-custos-e-indices-da-construcao-civil.html
-- VaiVolta: https://vaivolta.com.br/
+- Selecionar UF não muda o preço por m².
+- Padrão de obra não equivale automaticamente a tipologia CUB.
+- O CUB R8-N de SP (set/2026, R$ 2.238,58/m² sem desoneração), documentado no site com link, é **apenas uma referência contextual** — não é o preço de uma casa ou galpão, e não alimenta o cálculo.
+- Comparação de padrões utiliza multiplicadores relativos aos valores hipotéticos do mesmo tipo de obra, ajustados à base personalizada.
+- A projeção de ±15% é um exercício ilustrativo de sensibilidade; não constitui intervalo de confiança estatístico.
+- Planejamento financeiro usa fases e durações convencionadas internamente, e não um cronograma profissional.
+- Materiais e mão de obra não podem ser segregados corretamente sem composições e quantitativos compatíveis.
+
+### Fórmula da simulação financeira
+
+```text
+construção = área × taxa_m2_informada × fator_terreno × fator_pavimentos
+adicionais = soma dos opcionais selecionados compatíveis com a tipologia
+subtotal = construção + adicionais
+reserva = subtotal × percentual_de_reserva
+total_obra = subtotal + reserva
+investimento = total_obra + terreno (se informado)
+```
+
+Peso percentual de etapa distribui **apenas o custo da construção**, sem recontabilizar reserva/adicionais.
+
+## Contato comercial
+
+Para habilitar o botão do WhatsApp, configure a variável pública de build `VITE_WHATSAPP_NUMBER` na Vercel (apenas dígitos, DDI+DDD+número real autorizado). Veja `.env.example`. Não armazene segredos em variáveis `VITE_`: são expostas no bundle público.
+
+Sem essa configuração o simulador permanece funcional, sem botão falso de contato. Não há captação automática de dados pessoais, servidor ou login.
+
+## Referências estudadas
+
+Sites de terceiros são referências de experiência, categorias de insumos e perguntas, não fonte de código ou tabelas copiadas.
+
+- VaiVolta: https://vaivolta.com.br/ferramentas/calculadora-de-orcamento-de-obra
 - ObraFácil: https://www.obra-facil.com/simulador
+- Habituz: https://www.habituz.com.br/ferramentas/quanto-custa-sua-obra
+- Tudo de Imóvel: https://www.tudodeimovel.com.br/custo-de-construcao/
 - Calcula Obra: https://calculobra.com.br/calculadoras/
+- CUB/SP oficial: https://sindusconsp.com.br/cub-paulista-sobe-013-em-setembro/
+- SINAPI/IBGE: https://www.ibge.gov.br/estatisticas/economicas/precos-e-custos/9270-sistema-nacional-de-pesquisa-de-custos-e-indices-da-construcao-civil.html
 
-Consulte os dados e suas licenças/condições de uso antes de importar qualquer tabela de referência. Não copie textos, tabelas ou código proprietários de concorrentes.
+## Próxima evolução
 
-## Próximas fases
+1. Base estruturada, auditável e atualizada por competência, UF e **tipologia** (não misturar R8-N com casas/galpões).
+2. Motor de composições com quantitativos, produtividade, preços de materiais e mão de obra, encargos e BDI, sem dupla contagem.
+3. Perguntas condicionais aprofundadas para banheiros, cômodos, estrutura, pé-direito, fechamentos e equipamentos industriais.
+4. PDF profissional personalizado para a construtora, incluindo premissas, fonte, data e exclusões.
+5. Integração opcional de leads com consentimento, armazenamento seguro e controles LGPD.
 
-1. Tabela de referências por UF, tipologia e competência com fonte original auditável.
-2. Separação técnica das composições de materiais e mão de obra, BDI e encargos sem dupla contagem.
-3. Calculadoras de insumos por geometria e quantitativos.
-4. Cenários e relatório PDF profissional com identificação da construtora.
-5. Captura consentida de leads e armazenamento seguro (opcional).
+O briefing de implementação incremental está em [CODEX_BRIEF.md](./CODEX_BRIEF.md).
