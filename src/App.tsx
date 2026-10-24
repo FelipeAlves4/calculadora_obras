@@ -68,7 +68,7 @@ function App() {
         whatsappText,
         'Reserva informada: ' + form.reservePercent + '%',
         'Os valores não são orçamento técnico, cotação ou proposta de engenharia.',
-      ].join('\\n'));
+      ].join('\n'));
       setCopied(true);
     } catch {
       setCopied(false);
