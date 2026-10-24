@@ -216,3 +216,17 @@
 @media print{
   .insights-section{display:none!important;}
 }
+
+/* Proveniência de preço — fase de integração com referências auditáveis */
+.source-details{margin:18px 0 5px;padding:15px 16px;border:1px solid rgba(201,151,50,.22);border-radius:10px;background:rgba(201,151,50,.04);}
+.source-details summary{cursor:pointer;color:#e9cb91;font-size:12px;font-weight:800;list-style-position:inside;}
+.source-details summary span{color:#849bb0;font-size:10px;font-weight:500;}
+.source-details>p{color:#91a6b9;line-height:1.6;font-size:11px;margin:12px 0 16px;}
+.source-details .fields-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+.source-details input[type=month]{color-scheme:dark;}
+.source-details .field:last-child{grid-column:1/-1;}
+.reference-status{color:#92a9bb;line-height:1.65;font-size:11px;border-top:1px solid rgba(255,255,255,.08);margin-top:15px;padding-top:12px;}
+.reference-status strong{color:#ebcd93;}
+.reference-status button{display:block;background:rgba(201,151,50,.15);color:#ecca88;border:1px solid rgba(201,151,50,.35);border-radius:8px;padding:10px 12px;font-size:11px;font-weight:800;margin-top:10px;}
+.source-url{overflow-wrap:anywhere;}
+@media(max-width:560px){.source-details .fields-grid{grid-template-columns:1fr;}.source-details .field:last-child{grid-column:auto;}}
