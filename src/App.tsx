@@ -26,6 +26,7 @@ function App() {
   const [form, setForm] = useState<EstimateInput>(initialInput);
   const [view, setView] = useState<'inputs' | 'results'>('inputs');
   const [details, setDetails] = useState(true);
+  const [analysisTab,setAnalysisTab] = useState<'etapas'|'padroes'|'desembolso'|'materiais'|'metodo'>('etapas');
   const [formMode,setFormMode] = useState<'guiado'|'detalhado'>('guiado');
   const [step,setStep] = useState(1);
   const [copied,setCopied] = useState(false);
@@ -102,7 +103,7 @@ function App() {
 
       <div className="notice notice-top" role="note"><ShieldAlert size={19}/><div><strong>Modo demonstrativo — valores não oficiais.</strong> As tabelas de preços, percentuais por etapa e acréscimos são exemplos editáveis, sem validação CUB/SINAPI. Os resultados não são um orçamento técnico ou proposta da construtora.</div></div>
 
-      <aside className="official-reference"><div className="official-left"><span className="reference-icon"><Info size={18}/></span><div><strong>Referência oficial para consulta</strong><p>CUB de São Paulo (setembro/2026): <b>R$ 2.238,58/m²</b> — tipologia R8-N, sem desoneração. Esse indicador corresponde a uma tipologia de edifício residencial e <b>não é aplicado automaticamente</b> a casas ou galpões.</p></div></div><a href="https://sindusconsp.com.br/cub-paulista-sobe-013-em-setembro/" target="_blank" rel="noopener noreferrer">Consultar SindusCon-SP <ArrowRight size={14}/></a></aside>
+
 
       <div className="mobile-view-switch" role="tablist" aria-label="Navegação do simulador">
         <button className={view === 'inputs' ? 'selected' : ''} onClick={() => setView('inputs')} role="tab" aria-selected={view === 'inputs'}><SlidersHorizontal size={16}/> Configurar obra</button>
@@ -190,7 +191,35 @@ function App() {
             <div className="metric"><div className="metric-icon"><ShieldAlert size={19}/></div><span>Reserva técnica</span><strong>{formatMoney(result.reserve)}</strong><small>{form.reservePercent}% sobre o subtotal</small></div>
           </div>
 
-          <div className="panel result-panel">
+          <div className="quick-breakdown">
+            <div className="quick-breakdown-head"><div><span className="eyebrow">VISÃO RÁPIDA</span><strong>Etapas mais relevantes</strong></div><BarChart3 size={19}/></div>
+            {result.stages.slice().sort((x,y)=>y.cost-x.cost).slice(0,3).map(item=><div className="quick-breakdown-row" key={item.id}><span>{item.title}</span><strong>{formatMoney(item.cost)}</strong><div className="quick-track"><div style={{width:item.percentage+'%'}}/></div></div>)}
+            <button className="quick-action" type="button" onClick={()=>{setAnalysisTab('etapas');document.getElementById('analises')?.scrollIntoView({behavior:'smooth',block:'start'});}}>Analisar todas as etapas <ArrowRight size={16}/></button>
+          </div>
+
+          <div className="cta-panel"><div><span>PRÓXIMO PASSO</span><h2>Seu projeto merece um orçamento real.</h2><p>Use esta simulação como ponto de partida e solicite uma análise personalizada de uma construtora.</p></div>
+            <div className="cta-actions"><button className="btn btn-gold" onClick={printReport}><Download size={17}/> Salvar relatório em PDF</button><button className="btn btn-outline" onClick={()=>void copySummary()}><Copy size={16}/> {copied?'Resumo copiado':'Copiar resumo'}</button>
+              {whatsappReady ? <button className="btn btn-outline" onClick={openWhatsapp}><PhoneCall size={17}/> Solicitar orçamento <ArrowRight size={16}/></button> : <small>Contato por WhatsApp disponível após configurar o número comercial.</small>}
+            </div>
+          </div>
+        </section>
+      </div>
+      <section className={view === 'results' ? 'insights-section mobile-active' : 'insights-section'} id="analises" aria-label="Análises adicionais da obra">
+        <div className="insights-intro">
+          <div><span className="eyebrow">APROFUNDE SEU PLANEJAMENTO</span><h2>Análises e ferramentas</h2><p>Veja apenas o que interessa agora. Todas as ferramentas continuam acessíveis, sem poluir a tela inicial.</p></div>
+          <span className="insight-kicker">5 áreas de análise</span>
+        </div>
+        <div className="insights-tabs" role="tablist" aria-label="Análises da obra">
+          {([
+            {id:'etapas',title:'Custos por etapa',icon:BarChart3},
+            {id:'padroes',title:'Comparar padrões',icon:SlidersHorizontal},
+            {id:'desembolso',title:'Desembolso',icon:TrendingUp},
+            {id:'materiais',title:'Materiais',icon:Calculator},
+            {id:'metodo',title:'Metodologia',icon:Info}
+          ] as const).map(({id,title,icon:Icon})=><button key={id} type="button" role="tab" aria-selected={analysisTab===id} aria-controls="analysis-content" className={analysisTab===id?'active':''} onClick={()=>setAnalysisTab(id)}><Icon size={17}/>{title}</button>)}
+        </div>
+        <div id="analysis-content" role="tabpanel" tabIndex={0} className="insights-content">
+          {analysisTab==='etapas' && <div className="panel result-panel">
             <div className="panel-heading"><div><span className="eyebrow">COMPOSIÇÃO DA ESTIMATIVA</span><h2>Custos por etapa</h2></div><BarChart3 size={21}/></div>
             <p className="small-description">Distribuição percentual ilustrativa da construção base; os adicionais e a reserva são apresentados separadamente.</p>
             <div className="chart-summary">
@@ -209,18 +238,18 @@ function App() {
               <span className="stage-percent">{stage.percentage}% da base</span>
             </div>)}</div>
             <div className="cost-footer"><div><span>Subtotal da obra e adicionais</span><strong>{formatMoney(result.subtotal)}</strong></div><div><span>Reserva ({form.reservePercent}%)</span><strong>{formatMoney(result.reserve)}</strong></div><div className="cost-total"><span>Total estimado</span><strong>{formatMoney(result.total)}</strong></div></div>
-          </div>
-
-          <div className="panel result-panel">
+          </div>}
+          {analysisTab==='padroes' && <div className="panel result-panel">
             <div className="panel-heading"><div><span className="eyebrow">ANÁLISE DE CENÁRIOS</span><h2>Compare os padrões</h2></div><SlidersHorizontal size={21}/></div>
             <p className="small-description">Mesma área, terreno e adicionais. O cenário selecionado respeita seu preço/m² personalizado; os demais usam exemplos pré-definidos.</p>
             <div className="compare-grid">{comparisons.map(item => <div key={item.id} className={'compare-card ' + (item.selected ? 'compare-selected' : '')}>
               <div className="compare-top"><span>{item.title}</span>{item.selected ? <b>ATUAL</b> : null}</div><strong>{formatMoney(item.result.total)}</strong><small>{formatMoney(item.result.perSquareMeter)} / m²</small>
             </div>)}</div>
-          </div>
-
-          <BudgetPlanner result={result} type={form.type}/>
-          <div className="panel result-panel methodology">
+          </div>}
+          {analysisTab==='desembolso' && <BudgetPlanner result={result} type={form.type}/>}
+          {analysisTab==='materiais' && <MaterialTools/>}
+          {analysisTab==='metodo' && <>
+            <div className="panel result-panel methodology">
             <button className="methodology-toggle" onClick={() => setDetails(value => !value)} aria-expanded={details}><div><Info size={19}/><strong>Como calculamos esta estimativa?</strong></div><span>{details ? '−' : '+'}</span></button>
             {details ? <div className="methodology-body">
               <p><strong>Base:</strong> {formatNumber(form.area)} m² × {formatMoney(form.baseRate)} por m².</p>
@@ -230,15 +259,10 @@ function App() {
               <div className="info-note"><ShieldAlert size={16}/> Não considera automaticamente projetos, licenças, impostos, BDI, tributos, fretes, sondagem, condições estruturais, quantidades físicas de materiais ou diferenças regionais. Adicione valores devidos e obtenha orçamento profissional.</div>
             </div> : null}
           </div>
-
-          <div className="cta-panel"><div><span>PRÓXIMO PASSO</span><h2>Seu projeto merece um orçamento real.</h2><p>Use esta simulação como ponto de partida e solicite uma análise personalizada de uma construtora.</p></div>
-            <div className="cta-actions"><button className="btn btn-gold" onClick={printReport}><Download size={17}/> Salvar relatório em PDF</button><button className="btn btn-outline" onClick={()=>void copySummary()}><Copy size={16}/> {copied?'Resumo copiado':'Copiar resumo'}</button>
-              {whatsappReady ? <button className="btn btn-outline" onClick={openWhatsapp}><PhoneCall size={17}/> Solicitar orçamento <ArrowRight size={16}/></button> : <small>Contato por WhatsApp disponível após configurar o número comercial.</small>}
-            </div>
-          </div>
-        </section>
-      </div>
-      <MaterialTools />
+            <aside className="official-reference"><div className="official-left"><span className="reference-icon"><Info size={18}/></span><div><strong>Referência oficial para consulta, não utilizada no cálculo</strong><p>CUB de São Paulo (setembro/2026): <b>R$ 2.238,58/m²</b> — tipologia R8-N, sem desoneração. Esse índice é de uma tipologia de edifício, não um preço aplicável automaticamente a casas ou galpões.</p></div></div><a href="https://sindusconsp.com.br/cub-paulista-sobe-013-em-setembro/" target="_blank" rel="noopener noreferrer">Consultar fonte <ArrowRight size={14}/></a></aside>
+          </>}
+        </div>
+      </section>
       <footer className="footer"><span>Calculadora de Obras — simulação preliminar</span><span>Projeto demonstrativo · Valores sem validação de mercado</span></footer>
     </main>
 
