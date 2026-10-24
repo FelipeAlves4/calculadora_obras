@@ -14,7 +14,7 @@ export function wallMaterials(data: WallInputs) {
   const netArea = Math.max(0, positive(data.length) * positive(data.height) - positive(data.openings));
   const moduleArea = ((positive(data.blockLengthCm) + positive(data.jointCm)) / 100)
     * ((positive(data.blockHeightCm) + positive(data.jointCm)) / 100);
-  return { area: netArea, pieces: moduleArea > 0 ? Math.ceil(netArea / moduleArea * waste(data.wastePercent)) : 0 };
+  return { area: netArea, pieces: moduleArea > 0 ? Math.ceil(netArea / moduleArea * waste(data.wastePercent) - 1e-9) : 0 };
 }
 export function concreteMaterials(data: ConcreteInputs) {
   const volume = positive(data.length) * positive(data.width) * positive(data.thicknessCm) / 100;
