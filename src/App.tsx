@@ -1,6 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { MaterialTools } from './MaterialTools';
 import { BudgetPlanner } from './BudgetPlanner';
+import { APPROVED_PRICING_REFERENCES, findMatchingReference } from './pricingReferences';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   ArrowRight, BarChart3, Building2, Calculator, CheckCircle2, ClipboardList,
@@ -32,6 +33,10 @@ function App() {
   const [copied,setCopied] = useState(false);
   const result = useMemo(() => calculate(form), [form]);
   const comparisons = useMemo(() => compareStandards(form), [form]);
+  // A base permanece demonstrativa enquanto não existir referência regional e tipológica aprovada.
+  const matchingReference = useMemo(() => findMatchingReference(APPROVED_PRICING_REFERENCES,{
+    workType: form.type, standard: form.standard, uf: form.uf
+  }), [form.type,form.standard,form.uf]);
   const set = <K extends keyof EstimateInput>(key: K, value: EstimateInput[K]) => setForm(previous => ({ ...previous, [key]: value }));
   const updateType = (type: WorkType) => setForm(previous => switchPreset(previous, type, previous.standard));
   const updateStandard = (standard: Standard) => setForm(previous => switchPreset(previous, previous.type, standard));
@@ -59,6 +64,7 @@ function App() {
     'Padrão: ' + (STANDARDS.find(s => s.id === form.standard)?.title || form.standard),
     'Local: ' + (form.city || 'Não informado') + '/' + form.uf,
     'Estimativa demonstrativa da obra: ' + formatMoney(result.total),
+    ...(form.priceSourceName ? ['Preço-base informado com fonte declarada: '+form.priceSourceName+(form.priceSourceCompetence?' ('+form.priceSourceCompetence+')':'')+' — ainda sem validação independente.'] : []),
     ...(form.landCost>0?['Terreno informado: '+formatMoney(form.landCost),'Investimento incluindo terreno: '+formatMoney(result.investmentTotal)]:[]),
     'Gostaria de uma avaliação técnica personalizada.'
   ].join('\n');
@@ -143,6 +149,20 @@ function App() {
               <Field title="Preço base de referência por m²" note="Editável. Valor inicial ilustrativo; não é uma cotação CUB ou SINAPI."><div className="input-wrap emphasis-input"><span>R$</span><input type="number" min="0" step="10" value={form.baseRate} onChange={e => set('baseRate', Math.max(0, Number(e.target.value) || 0))} aria-label="Preço base por metro quadrado"/><b>/ m²</b></div></Field>
               <div className="context-note"><Info size={18}/><span>Preço pré-preenchido para demonstração: {formatMoney(DEFAULT_RATES[form.type][form.standard])}/m². Troque pelo seu custo unitário documentado.</span></div>
             </div>
+
+            <details className="source-details">
+              <summary>Rastreabilidade do preço por m² <span>(opcional)</span></summary>
+              <p>Informe onde encontrou seu preço-base. Uma fonte declarada pelo visitante não se torna automaticamente validada pela plataforma.</p>
+              <div className="fields-grid">
+                <Field title="Nome da fonte"><div className="input-wrap"><input type="text" maxLength={120} placeholder="Ex.: levantamento próprio" value={form.priceSourceName} onChange={e=>set('priceSourceName',e.target.value)}/></div></Field>
+                <Field title="Competência / mês da fonte"><div className="input-wrap"><input type="month" value={form.priceSourceCompetence} onChange={e=>set('priceSourceCompetence',e.target.value)}/></div></Field>
+                <Field title="Link para documentação"><div className="input-wrap"><input type="url" maxLength={300} placeholder="https://..." value={form.priceSourceUrl} onChange={e=>set('priceSourceUrl',e.target.value)}/></div></Field>
+              </div>
+              <div className="reference-status">{matchingReference ? <>
+                <strong>Existe referência aprovada compatível.</strong> {matchingReference.publisher}, {matchingReference.competence} ({form.uf}).
+                <button type="button" onClick={()=>setForm(prev=>({...prev,baseRate:matchingReference.valuePerM2,priceSourceName:matchingReference.publisher,priceSourceCompetence:matchingReference.competence,priceSourceUrl:matchingReference.sourceUrl}))}>Usar referência aprovada</button>
+              </> : <span>Atualmente não há tabela de preços importada, aprovada e compatível com {form.type==='casa'?'casas':'galpões'} / {form.uf} / {STANDARDS.find(item=>item.id===form.standard)?.title.toLowerCase()}. O preço permanece demonstrativo ou informado manualmente.</span>}</div>
+            </details>
             <div className="separator"/>
             <SectionTitle number="04" title="Terreno e reservas" description="Simule acréscimos e a margem de imprevistos."/>
             <div className="fields-grid">
@@ -253,6 +273,9 @@ function App() {
             <button className="methodology-toggle" onClick={() => setDetails(value => !value)} aria-expanded={details}><div><Info size={19}/><strong>Como calculamos esta estimativa?</strong></div><span>{details ? '−' : '+'}</span></button>
             {details ? <div className="methodology-body">
               <p><strong>Base:</strong> {formatNumber(form.area)} m² × {formatMoney(form.baseRate)} por m².</p>
+              <p><strong>Fonte do preço-base:</strong> {form.priceSourceName || 'Exemplo ilustrativo sem fonte técnica validada'}{form.priceSourceCompetence ? ' — competência ' + form.priceSourceCompetence : ''}. {form.priceSourceName ? 'Fonte declarada pelo usuário e não validada pela ferramenta.' : ''}</p>
+              {form.priceSourceUrl && <p className="source-url">Documentação informada: {form.priceSourceUrl}</p>}
+              <p><strong>Curadoria regional:</strong> {matchingReference ? 'Existe uma referência aprovada para esta tipologia e estado; só é aplicada se você clicar para utilizá-la.' : 'Nenhuma referência regional revisada e aprovada foi carregada.'}</p>
               <p><strong>Terreno:</strong> fator demonstrativo {formatNumber(result.terrainFactor)}×. <strong>Pavimentos:</strong> fator {formatNumber(result.floorFactor)}×.</p>
               <p><strong>Etapas:</strong> custo base dividido em pesos hipotéticos específicos para {form.type === 'casa' ? 'residências' : 'galpões'}.</p>
               <p><strong>Adicionais:</strong> soma dos itens escolhidos. <strong>Reserva:</strong> {form.reservePercent}% do subtotal.</p>
@@ -273,6 +296,7 @@ function App() {
       <h2>Custos por etapa</h2><table><thead><tr><th>Etapa</th><th>Participação da base</th><th>Custo</th></tr></thead><tbody>{result.stages.map(s => <tr key={s.id}><td>{s.title}</td><td>{s.percentage}%</td><td>{formatMoney(s.cost)}</td></tr>)}</tbody></table>
       <h2>Adicionais</h2><table><thead><tr><th>Descrição</th><th>Custo</th></tr></thead><tbody>{result.selectedAddOns.length ? result.selectedAddOns.map(s => <tr key={s.id}><td>{s.title}</td><td>{formatMoney(s.cost)}</td></tr>) : <tr><td>Nenhum adicional selecionado</td><td>{formatMoney(0)}</td></tr>}</tbody></table>
       <table className="print-totals"><tbody><tr><td>Construção base</td><td>{formatMoney(result.construction)}</td></tr><tr><td>Adicionais</td><td>{formatMoney(result.addOnsTotal)}</td></tr><tr><td>Reserva ({form.reservePercent}%)</td><td>{formatMoney(result.reserve)}</td></tr><tr><td><strong>Subtotal da construção</strong></td><td><strong>{formatMoney(result.total)}</strong></td></tr>{form.landCost>0 && <tr><td>Terreno (separado)</td><td>{formatMoney(form.landCost)}</td></tr>}{form.landCost>0 && <tr><td><strong>Investimento incluindo terreno</strong></td><td><strong>{formatMoney(result.investmentTotal)}</strong></td></tr>}</tbody></table>
+      <p className="print-disclaimer"><strong>Proveniência do preço/m²:</strong> {form.priceSourceName || 'Sem referência documental cadastrada'}{form.priceSourceCompetence ? ' ('+form.priceSourceCompetence+')' : ''}{form.priceSourceUrl ? ' — '+form.priceSourceUrl : ''}. O preenchimento não representa validação independente.</p>
       <p className="print-disclaimer">Valores e percentuais fictícios, sem atualização regional. Esta é uma simulação exploratória e não substitui projeto, análise técnica, orçamento de engenharia ou cotação formal. O usuário é responsável por conferir os valores preenchidos. Relatório gerado em {new Date().toLocaleDateString('pt-BR')}.</p>
     </article>
   </div>;
