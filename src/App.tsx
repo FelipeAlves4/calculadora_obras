@@ -4,7 +4,7 @@ import { BudgetPlanner } from './BudgetPlanner';
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import {
   ArrowRight, BarChart3, Building2, Calculator, CheckCircle2, ClipboardList,
-  Download, FileText, HardHat, Home, Info, MapPin, Maximize2, PhoneCall,
+  Download, FileText, HardHat, Home, Info, MapPin, Maximize2, PhoneCall, Copy,
   RotateCcw, Ruler, ShieldAlert, SlidersHorizontal, TrendingUp, Wallet
 } from 'lucide-react';
 import {
@@ -28,6 +28,7 @@ function App() {
   const [details, setDetails] = useState(true);
   const [formMode,setFormMode] = useState<'guiado'|'detalhado'>('guiado');
   const [step,setStep] = useState(1);
+  const [copied,setCopied] = useState(false);
   const result = useMemo(() => calculate(form), [form]);
   const comparisons = useMemo(() => compareStandards(form), [form]);
   const set = <K extends keyof EstimateInput>(key: K, value: EstimateInput[K]) => setForm(previous => ({ ...previous, [key]: value }));
@@ -60,6 +61,20 @@ function App() {
     ...(form.landCost>0?['Terreno informado: '+formatMoney(form.landCost),'Investimento incluindo terreno: '+formatMoney(result.investmentTotal)]:[]),
     'Gostaria de uma avaliação técnica personalizada.'
   ].join('\n');
+  const copySummary = async () => {
+    try {
+      await navigator.clipboard.writeText([
+        'SIMULAÇÃO DEMONSTRATIVA - CALCULADORA DE OBRAS',
+        whatsappText,
+        'Reserva informada: ' + form.reservePercent + '%',
+        'Os valores não são orçamento técnico, cotação ou proposta de engenharia.',
+      ].join('\\n'));
+      setCopied(true);
+    } catch {
+      setCopied(false);
+      window.alert('O navegador não conseguiu copiar. Use o relatório em PDF como alternativa.');
+    }
+  };
   const openWhatsapp = () => {
     if (!whatsappReady) return;
     window.open('https://wa.me/' + phone + '?text=' + encodeURIComponent(whatsappText), '_blank', 'noopener,noreferrer');
@@ -217,7 +232,7 @@ function App() {
           </div>
 
           <div className="cta-panel"><div><span>PRÓXIMO PASSO</span><h2>Seu projeto merece um orçamento real.</h2><p>Use esta simulação como ponto de partida e solicite uma análise personalizada de uma construtora.</p></div>
-            <div className="cta-actions"><button className="btn btn-gold" onClick={printReport}><Download size={17}/> Salvar relatório em PDF</button>
+            <div className="cta-actions"><button className="btn btn-gold" onClick={printReport}><Download size={17}/> Salvar relatório em PDF</button><button className="btn btn-outline" onClick={()=>void copySummary()}><Copy size={16}/> {copied?'Resumo copiado':'Copiar resumo'}</button>
               {whatsappReady ? <button className="btn btn-outline" onClick={openWhatsapp}><PhoneCall size={17}/> Solicitar orçamento <ArrowRight size={16}/></button> : <small>Contato por WhatsApp disponível após configurar o número comercial.</small>}
             </div>
           </div>
