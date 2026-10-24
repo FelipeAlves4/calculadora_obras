@@ -56,7 +56,8 @@ function App() {
     'Área: ' + formatNumber(form.area) + ' m²',
     'Padrão: ' + (STANDARDS.find(s => s.id === form.standard)?.title || form.standard),
     'Local: ' + (form.city || 'Não informado') + '/' + form.uf,
-    'Estimativa demonstrativa: ' + formatMoney(result.total),
+    'Estimativa demonstrativa da obra: ' + formatMoney(result.total),
+    ...(form.landCost>0?['Terreno informado: '+formatMoney(form.landCost),'Investimento incluindo terreno: '+formatMoney(result.investmentTotal)]:[]),
     'Gostaria de uma avaliação técnica personalizada.'
   ].join('\n');
   const openWhatsapp = () => {
@@ -159,9 +160,15 @@ function App() {
             <div className="result-value">{formatMoney(result.total)}</div>
             <p>Projeção ilustrativa para {formatNumber(form.area)} m² de {form.type === 'casa' ? 'casa residencial' : 'galpão ou barracão'}.</p>
             <div className="result-per-meter"><span>Custo final estimado / m²</span><strong>{formatMoney(result.perSquareMeter)}</strong></div>
+            <div className="simulation-range"><small>Simule uma variação de ±15% no custo da obra</small><strong>{formatMoney(result.total*.85)} — {formatMoney(result.total*1.15)}</strong><span>Teste de sensibilidade hipotético, não um intervalo estatístico ou garantia.</span></div>
             <div className="result-glow"/>
           </div>
 
+          {(form.landCost>0||form.budgetAvailable>0) && <div className="budget-analysis">
+            {form.landCost>0 && <div><span>Terreno (fora da obra)</span><strong>{formatMoney(form.landCost)}</strong></div>}
+            {form.landCost>0 && <div><span>Investimento incluindo terreno</span><strong>{formatMoney(result.investmentTotal)}</strong></div>}
+            {form.budgetAvailable>0 && <div><span>Diferença para o orçamento disponível</span><strong className={form.budgetAvailable>=result.investmentTotal?'within-budget':'over-budget'}>{form.budgetAvailable>=result.investmentTotal?'Sobra ':'Faltam '}{formatMoney(Math.abs(form.budgetAvailable-result.investmentTotal))}</strong></div>}
+          </div>}
           <div className="metrics-grid">
             <div className="metric"><div className="metric-icon"><HardHat size={19}/></div><span>Construção base</span><strong>{formatMoney(result.construction)}</strong><small>Área × preço/m² × fatores</small></div>
             <div className="metric"><div className="metric-icon"><TrendingUp size={19}/></div><span>Adicionais</span><strong>{formatMoney(result.addOnsTotal)}</strong><small>Itens opcionais selecionados</small></div>
@@ -197,6 +204,7 @@ function App() {
             </div>)}</div>
           </div>
 
+          <BudgetPlanner result={result} type={form.type}/>
           <div className="panel result-panel methodology">
             <button className="methodology-toggle" onClick={() => setDetails(value => !value)} aria-expanded={details}><div><Info size={19}/><strong>Como calculamos esta estimativa?</strong></div><span>{details ? '−' : '+'}</span></button>
             {details ? <div className="methodology-body">
@@ -215,6 +223,7 @@ function App() {
           </div>
         </section>
       </div>
+      <MaterialTools />
       <footer className="footer"><span>Calculadora de Obras — simulação preliminar</span><span>Projeto demonstrativo · Valores sem validação de mercado</span></footer>
     </main>
 
@@ -224,7 +233,7 @@ function App() {
       <div className="print-highlight"><small>Total estimado, incluindo adicionais e reserva</small><strong>{formatMoney(result.total)}</strong><span>{formatMoney(result.perSquareMeter)} por m²</span></div>
       <h2>Custos por etapa</h2><table><thead><tr><th>Etapa</th><th>Participação da base</th><th>Custo</th></tr></thead><tbody>{result.stages.map(s => <tr key={s.id}><td>{s.title}</td><td>{s.percentage}%</td><td>{formatMoney(s.cost)}</td></tr>)}</tbody></table>
       <h2>Adicionais</h2><table><thead><tr><th>Descrição</th><th>Custo</th></tr></thead><tbody>{result.selectedAddOns.length ? result.selectedAddOns.map(s => <tr key={s.id}><td>{s.title}</td><td>{formatMoney(s.cost)}</td></tr>) : <tr><td>Nenhum adicional selecionado</td><td>{formatMoney(0)}</td></tr>}</tbody></table>
-      <table className="print-totals"><tbody><tr><td>Construção base</td><td>{formatMoney(result.construction)}</td></tr><tr><td>Adicionais</td><td>{formatMoney(result.addOnsTotal)}</td></tr><tr><td>Reserva ({form.reservePercent}%)</td><td>{formatMoney(result.reserve)}</td></tr><tr><td><strong>Total</strong></td><td><strong>{formatMoney(result.total)}</strong></td></tr></tbody></table>
+      <table className="print-totals"><tbody><tr><td>Construção base</td><td>{formatMoney(result.construction)}</td></tr><tr><td>Adicionais</td><td>{formatMoney(result.addOnsTotal)}</td></tr><tr><td>Reserva ({form.reservePercent}%)</td><td>{formatMoney(result.reserve)}</td></tr><tr><td><strong>Subtotal da construção</strong></td><td><strong>{formatMoney(result.total)}</strong></td></tr>{form.landCost>0 && <tr><td>Terreno (separado)</td><td>{formatMoney(form.landCost)}</td></tr>}{form.landCost>0 && <tr><td><strong>Investimento incluindo terreno</strong></td><td><strong>{formatMoney(result.investmentTotal)}</strong></td></tr>}</tbody></table>
       <p className="print-disclaimer">Valores e percentuais fictícios, sem atualização regional. Esta é uma simulação exploratória e não substitui projeto, análise técnica, orçamento de engenharia ou cotação formal. O usuário é responsável por conferir os valores preenchidos. Relatório gerado em {new Date().toLocaleDateString('pt-BR')}.</p>
     </article>
   </div>;
