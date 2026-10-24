@@ -44,6 +44,21 @@ Stack: React 18, TypeScript, Vite, Recharts, Lucide.
 
 Esses quantitativos **não são somados automaticamente ao orçamento**, para não duplicar valores já incorporados ao custo por m². Eles não substituem medições em projeto.
 
+## Interface revisada
+
+A interface desktop utiliza um formulário e um resumo compacto (resultado, métricas, 3 etapas de maior peso e CTA). As análises detalhadas ocupam **largura total**, com uma só aba visível por vez: **Custos por etapa, Comparar padrões, Desembolso, Materiais e Metodologia**. Isso evita uma longa coluna à direita com uma coluna esquerda vazia.
+
+No celular, o usuário alterna entre configuração e resultado; as análises detalhadas aparecem apenas na área de resultados. O relatório para impressão é independente das abas selecionadas.
+
+## Preparação para preços regionais auditáveis
+
+- `src/pricingReferences.ts` estabelece os metadados obrigatórios para registros de preço: tipologia, padrão, UF, competência (AAAA-MM), documento, publicador, URL HTTPS, valor/m², escopo incluído e excluído, revisor, data da revisão e status de aprovação.
+- `findMatchingReference` usa **somente registros aprovados com metadados completos e correspondência exata de tipologia, UF e padrão**. A seleção também respeita competência máxima quando informada.
+- A lista `APPROVED_PRICING_REFERENCES` começa **vazia**: ainda não há tabelas oficiais autorizadas e tecnicamente reconciliadas para os tipos de obra tratados. O app nunca finge ter preço CUB/SINAPI regionalizado.
+- O formulário aceita nome, competência e URL de uma fonte **informada manualmente**; tais informações aparecem na metodologia e no PDF, **sem implicar validação independente**.
+- Depois de importar e aprovar referências reais com composição compatível, poderá aparecer o botão "Usar referência aprovada" para aquela tipologia/padrão/UF.
+- Para produzir precificação comercial real ainda é necessário estabelecer composição e escopo, evitar dupla contagem de BDI/encargos, verificar direito de uso dos dados e obter revisão técnica de profissional competente.
+
 ## Transparência das premissas
 
 **ATENÇÃO: NÃO USAR COMO ORÇAMENTO REAL SEM VALIDAÇÃO TÉCNICA.**
