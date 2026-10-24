@@ -30,6 +30,25 @@ describe('simulador', () => {
     expect(result.perSquareMeter).toBe(0);
   });
 
+  it('separa o terreno do custo por metro quadrado de construção', () => {
+    const input = initialInput();
+    input.landCost = 150000;
+    const result = calculate(input);
+    expect(result.investmentTotal).toBeCloseTo(result.total + 150000);
+    expect(result.perSquareMeter).toBeCloseTo(result.total / 120);
+    expect(result.stages.reduce((sum, stage) => sum + stage.cost, 0)).toBeCloseTo(result.construction);
+  });
+
+  it('escala os outros padrões a partir do custo personalizado', () => {
+    const input = initialInput();
+    input.baseRate = 4000;
+    const comparison = compareStandards(input);
+    const economic = comparison.find(s => s.id === 'economico')!;
+    const high = comparison.find(s => s.id === 'alto')!;
+    expect(economic.result.construction).toBeCloseTo(120 * 4000 * (2300 / 3100), 4);
+    expect(high.result.construction).toBeCloseTo(120 * 4000 * (4500 / 3100), 4);
+  });
+
   it('compara os padrões e preserva um preço editado no padrão selecionado', () => {
     const input = initialInput();
     input.baseRate = 4000;
